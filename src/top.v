@@ -151,15 +151,11 @@ assign lcd_cs     = lcd_cs_r;
 assign lcd_rs     = lcd_rs_r;
 assign lcd_data   = spi_data[7]; // MSB
 
-// gen color bar
-//wire [15:0] pixel = (pixel_cnt >= 21600) ? 16'hF800 :
-//					(pixel_cnt >= 10800) ? 16'b10000_000000_10000 : 16'h001F;
 reg [15:0] pixel;
 
 reg decoder_get_data = 0;
 wire decoder_out;
 
-//24'h3e_0c_50
 decoder dcd (
 .clk(clk),
 .flashClk(flashClk),
@@ -271,30 +267,16 @@ always@(posedge clk or posedge rst) begin
                     decoder_get_data<=0;
 					if (bit_loop == 0) begin
                         decoder_get_data<=1;
-                        
-                        pixel<={16{decoder_out}};
-                        //pixel <= {16{flash_ready}};
-						// start
 						lcd_cs_r <= 0;
 						lcd_rs_r <= 1;
-//						spi_data <= 8'hF8; // RED
-						spi_data <= {8{decoder_out}};
-						bit_loop <= bit_loop + 1;
-					end else if (bit_loop == 8) begin
-						// next byte
-//						spi_data <= 8'h00; // RED
-						spi_data <= pixel[7:0];
+						spi_data[7] <= decoder_out;
 						bit_loop <= bit_loop + 1;
 					end else if (bit_loop == 16) begin
-						// end
 						lcd_cs_r <= 1;
 						lcd_rs_r <= 1;
 						bit_loop <= 0;
-						pixel_cnt <= pixel_cnt + 1; // next pixel
-
+						pixel_cnt <= pixel_cnt + 1;
 					end else begin
-						// loop
-						spi_data <= { spi_data[6:0], 1'b1 };
 						bit_loop <= bit_loop + 1;
 					end
 				end
@@ -307,7 +289,6 @@ always@(posedge clk or posedge rst) begin
                 else clk_cnt<=clk_cnt+1;
             end
 		endcase
-
 	end
 end
 

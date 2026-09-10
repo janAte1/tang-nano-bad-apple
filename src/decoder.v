@@ -5,11 +5,11 @@ module decoder
     input flashMiso, 
     output flashMosi,
     output flashCs,
-    input rst,  // asynchronous signal to return to starting address,
+    input rst,
     input get_data,
     output reg out
 );
-
+// There's no "STATE_DONE". You need to stop reading when you're done with the data.
 localparam STATE_AWAITING = 2'd0;
 localparam STATE_BLACK = 2'd1;
 localparam STATE_WHITE = 2'd2;
@@ -19,7 +19,7 @@ reg [15:0] buffer = 0;
 reg [7:0] count = 0;
 reg load_next_word = 0;
 
-flashReader #(24'h10_00_00) reader (
+flashReader reader (
 .clk(clk),
 .flashClk(flashClk),
 .flashCs(flashCs),
@@ -36,44 +36,44 @@ if (rst) begin
     count<=0;
     out<=0;
 end else begin
-load_next_word<=0;
+    load_next_word<=0;
 
-// buffer[15:8] is black, buffer[7:0] is white
-case (state)
-    STATE_AWAITING: begin
-        if (flash_ready) begin
-            buffer <= flash_out;
-            load_next_word<=1;
-            state<=STATE_BLACK;
-            out<=0;
-            count<=flash_out[15:8];
+    // buffer[15:8] is black, buffer[7:0] is white
+    case (state)
+        STATE_AWAITING: begin
+            if (flash_ready) begin
+                buffer <= flash_out;
+                load_next_word<=1;
+                state<=STATE_BLACK;
+                out<=0;
+                count<=flash_out[15:8];
+            end
         end
-    end
-    
-    STATE_BLACK: begin
-        if (count==0 & flash_ready) begin
-            state<=STATE_WHITE;
-            out<=1;
-            count<=buffer[7:0];
-            buffer <= flash_out;
-            load_next_word<=1;
+        
+        STATE_BLACK: begin
+            if (count==0 & flash_ready) begin
+                state<=STATE_WHITE;
+                out<=1;
+                count<=buffer[7:0];
+                buffer <= flash_out;
+                load_next_word<=1;
+            end
+            else if (get_data) begin
+                count<=count-1;
+            end
         end
-        else if (get_data) begin
-            count<=count-1;
-        end
-    end
 
-    STATE_WHITE: begin
-        if (count==0) begin
-            state<=STATE_BLACK;
-            out<=0;
-            count<=buffer[15:8];
+        STATE_WHITE: begin
+            if (count==0) begin
+                state<=STATE_BLACK;
+                out<=0;
+                count<=buffer[15:8];
+            end
+            else if (get_data) begin
+                count<=count-8'b1;
+            end
         end
-        else if (get_data) begin
-            count<=count-8'b1;
-        end
-    end
-endcase
+    endcase
 end
 end
 endmodule

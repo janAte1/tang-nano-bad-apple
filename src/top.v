@@ -1,8 +1,7 @@
+// Based on:
 // 1.14 inch 240x135 SPI LCD TEST for TANG NANO 9K
 // by fanoble, QQ:87430545
 // 27/6/2022
-
-`timescale 1ps/1ps
 
 module top(
 	input clk, // 27MHz
@@ -21,9 +20,9 @@ module top(
     input btn1,
     input btn2
 );
-
 wire rst = ~btn2;
 
+localparam TOTAL_FRAMES = 6955;
 localparam MAX_CMDS = 69;
 
 wire [8:0] init_cmd[MAX_CMDS:0];
@@ -124,7 +123,7 @@ localparam INIT_PREPARE = 4'b0001; // delay 200ms after reset
 localparam INIT_WAKEUP  = 4'b0010; // write cmd 0x11 MIPI_DCS_EXIT_SLEEP_MODE
 localparam INIT_SNOOZE  = 4'b0011; // delay 120ms after wakeup
 localparam INIT_WORKING = 4'b0100; // write command & data
-localparam INIT_DONE    = 4'b0101; // all done
+localparam PLAYBACK    = 4'b0101; // 
 localparam WAITING_FOR_NEXT_FRAME = 4'b0110;
 
 localparam CNT_100MS = 32'd2700000;
@@ -132,9 +131,7 @@ localparam CNT_120MS = 32'd3240000;
 localparam CNT_200MS = 32'd5400000;
 localparam CNT_30FPS = 32'd900000;
 
-localparam TOTAL_PIXEL_COUNT=27648;
-
-reg [ 3:0] init_state;
+reg [ 3:0] state;
 reg [ 6:0] cmd_index;
 reg [31:0] clk_cnt;
 reg [ 4:0] bit_loop;
@@ -177,7 +174,7 @@ always@(posedge clk or posedge rst) begin
 	if (rst) begin
 		clk_cnt <= 0;
 		cmd_index <= 0;
-		init_state <= INIT_RESET;
+		state <= INIT_RESET;
 
 		lcd_cs_r <= 1;
 		lcd_rs_r <= 1;
@@ -189,12 +186,12 @@ always@(posedge clk or posedge rst) begin
         frame_cnt <=0;
 	end else begin
 
-		case (init_state)
+		case (state)
 
 			INIT_RESET : begin
 				if (clk_cnt == CNT_100MS) begin
 					clk_cnt <= 0;
-					init_state <= INIT_PREPARE;
+					state <= INIT_PREPARE;
 					lcd_reset_r <= 1;
 				end else begin
 					clk_cnt <= clk_cnt + 1;
@@ -204,7 +201,7 @@ always@(posedge clk or posedge rst) begin
 			INIT_PREPARE : begin
 				if (clk_cnt == CNT_200MS) begin
 					clk_cnt <= 0;
-					init_state <= INIT_WAKEUP;
+					state <= INIT_WAKEUP;
 				end else begin
 					clk_cnt <= clk_cnt + 1;
 				end
@@ -222,7 +219,7 @@ always@(posedge clk or posedge rst) begin
 					lcd_cs_r <= 1;
 					lcd_rs_r <= 1;
 					bit_loop <= 0;
-					init_state <= INIT_SNOOZE;
+					state <= INIT_SNOOZE;
 				end else begin
 					// loop
 					spi_data <= { spi_data[6:0], 1'b1 };
@@ -233,7 +230,7 @@ always@(posedge clk or posedge rst) begin
 			INIT_SNOOZE : begin
 				if (clk_cnt == CNT_120MS) begin
 					clk_cnt <= 0;
-					init_state <= INIT_WORKING;
+					state <= INIT_WORKING;
 				end else begin
 					clk_cnt <= clk_cnt + 1;
 				end
@@ -241,7 +238,8 @@ always@(posedge clk or posedge rst) begin
 
 			INIT_WORKING : begin
 				if (cmd_index == MAX_CMDS + 1) begin
-					init_state <= INIT_DONE;
+					state <= PLAYBACK;
+                    clk_cnt <= 0;
 				end else begin
 					if (bit_loop == 0) begin
 						// start
@@ -263,12 +261,12 @@ always@(posedge clk or posedge rst) begin
 				end
 			end
 
-			INIT_DONE : begin
-				if (pixel_cnt == 32400) begin
-                    init_state<=WAITING_FOR_NEXT_FRAME;
+			PLAYBACK : begin
+                clk_cnt<=clk_cnt+1;
+				if (pixel_cnt == 135*180) begin
                     frame_cnt<=frame_cnt+1;
                     pixel_cnt<=0;
-                    clk_cnt<=0;
+                    state<=WAITING_FOR_NEXT_FRAME;
 				end else begin
                     decoder_get_data<=0;
 					if (bit_loop == 0) begin
@@ -302,7 +300,10 @@ always@(posedge clk or posedge rst) begin
 				end
 			end
             WAITING_FOR_NEXT_FRAME: begin
-                if (clk_cnt==CNT_30FPS*0) init_state<=INIT_DONE;
+                if (clk_cnt==CNT_30FPS && frame_cnt!=TOTAL_FRAMES) begin
+                    state<=PLAYBACK;
+                    clk_cnt<=0;
+                end
                 else clk_cnt<=clk_cnt+1;
             end
 		endcase

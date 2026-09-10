@@ -10,6 +10,15 @@ module decoder
     output reg out
 );
 
+localparam STATE_AWAITING = 2'd0;
+localparam STATE_BLACK = 2'd1;
+localparam STATE_WHITE = 2'd2;
+reg [1:0] state = STATE_AWAITING;
+wire [15:0] flash_out;
+reg [15:0] buffer = 0;
+reg [7:0] count = 0;
+reg load_next_word = 0;
+
 flashReader #(24'h10_00_00) reader (
 .clk(clk),
 .flashClk(flashClk),
@@ -21,16 +30,6 @@ flashReader #(24'h10_00_00) reader (
 .dataReady(flash_ready),
 .out(flash_out));
 
-localparam STATE_AWAITING = 2'd0;
-localparam STATE_BLACK = 2'd1;
-localparam STATE_WHITE = 2'd2;
-localparam STATE_DONE = 2'd3;
-reg [1:0] state = STATE_AWAITING;
-wire [15:0] flash_out;
-reg [15:0] buffer = 0;
-reg [7:0] count = 0;
-reg load_next_word = 0;
-
 always @(posedge clk or posedge rst) begin
 if (rst) begin
     state<=STATE_AWAITING;
@@ -39,7 +38,7 @@ if (rst) begin
 end else begin
 load_next_word<=0;
 
-// [15:8] is black, [7:0] is white
+// buffer[15:8] is black, buffer[7:0] is white
 case (state)
     STATE_AWAITING: begin
         if (flash_ready) begin
@@ -52,13 +51,12 @@ case (state)
     end
     
     STATE_BLACK: begin
-        if (count==0) begin
+        if (count==0 & flash_ready) begin
             state<=STATE_WHITE;
             out<=1;
             count<=buffer[7:0];
             buffer <= flash_out;
             load_next_word<=1;
-            if (~flash_ready) state<=STATE_DONE;
         end
         else if (get_data) begin
             count<=count-1;
@@ -72,7 +70,7 @@ case (state)
             count<=buffer[15:8];
         end
         else if (get_data) begin
-            count<=count-1;
+            count<=count-8'b1;
         end
     end
 endcase

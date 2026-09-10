@@ -9,6 +9,5 @@
         <File path="src/flash.v" type="file.verilog" enable="1"/>
         <File path="src/top.v" type="file.verilog" enable="1"/>
         <File path="src/flash.cst" type="file.cst" enable="1"/>
-        <File path="src/bad_apple.rao" type="file.gao" enable="1"/>
     </FileList>
 </Project>

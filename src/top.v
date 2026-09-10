@@ -108,8 +108,8 @@ assign init_cmd[58] = 9'h029; // Cmd  0x29: DISPON (Turn Display Output On)
 assign init_cmd[59] = 9'h02A; // Cmd  0x2A: CASET (Column Address Set)
 assign init_cmd[60] = 9'h100; // Data Start Col MSB = 0x00
 assign init_cmd[61] = 9'h128; // Data Start Col LSB = 0x28 (Column 40)
-assign init_cmd[62] = 9'h101; // Data End Col MSB   = 0x01
-assign init_cmd[63] = 9'h117; // Data End Col LSB   = 0x17 (Column 279)
+assign init_cmd[62] = 9'h100; // Data End Col MSB   = 0x01
+assign init_cmd[63] = 9'h1db; // Data End Col LSB   = 0x17 (Column 219)
 
 assign init_cmd[64] = 9'h02B; // Cmd  0x2B: RASET (Row Address Set)
 assign init_cmd[65] = 9'h100; // Data Start Row MSB = 0x00
@@ -159,21 +159,19 @@ assign lcd_data   = spi_data[7]; // MSB
 //					(pixel_cnt >= 10800) ? 16'b10000_000000_10000 : 16'h001F;
 reg [15:0] pixel;
 
-reg load_next_word = 0;
-wire flash_ready;
-wire [15:0] flash_out;
+reg decoder_get_data = 0;
+wire decoder_out;
+
 //24'h3e_0c_50
-flashReader #(24'h10_00_00) reader (
+decoder dcd (
 .clk(clk),
 .flashClk(flashClk),
-.flashCs(flashCs),
 .flashMiso(flashMiso),
 .flashMosi(flashMosi),
-.next(load_next_word),
+.flashCs(flashCs),
 .rst(rst),
-.dataReady(flash_ready),
-.out(flash_out));
-
+.get_data(decoder_get_data),
+.out(decoder_out));
 
 always@(posedge clk or posedge rst) begin
 	if (rst) begin
@@ -272,16 +270,17 @@ always@(posedge clk or posedge rst) begin
                     pixel_cnt<=0;
                     clk_cnt<=0;
 				end else begin
-                    load_next_word<=0;
+                    decoder_get_data<=0;
 					if (bit_loop == 0) begin
-                        load_next_word<=1;
-                        pixel<=flash_out;
+                        decoder_get_data<=1;
+                        
+                        pixel<={16{decoder_out}};
                         //pixel <= {16{flash_ready}};
 						// start
 						lcd_cs_r <= 0;
 						lcd_rs_r <= 1;
 //						spi_data <= 8'hF8; // RED
-						spi_data <= flash_out[15:8];
+						spi_data <= {8{decoder_out}};
 						bit_loop <= bit_loop + 1;
 					end else if (bit_loop == 8) begin
 						// next byte
@@ -303,7 +302,7 @@ always@(posedge clk or posedge rst) begin
 				end
 			end
             WAITING_FOR_NEXT_FRAME: begin
-                if (clk_cnt==CNT_30FPS*2 & 0) init_state<=INIT_DONE;
+                if (clk_cnt==CNT_30FPS*0) init_state<=INIT_DONE;
                 else clk_cnt<=clk_cnt+1;
             end
 		endcase

@@ -1,6 +1,6 @@
 module flashReader
 #(
-  parameter STARTING_ADDRESS = 24'h3e_0c_50
+  parameter STARTING_ADDRESS = 24'h10_00_00
 )
 (
     input clk,
@@ -41,6 +41,7 @@ end
         state<=STATE_INIT_POWER;
         flashCs <= 1;
         enableClock <= 0;
+        dataReady <= 0;
     end else begin
     case (state)
       STATE_INIT_POWER: begin

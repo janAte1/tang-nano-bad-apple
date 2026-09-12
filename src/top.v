@@ -17,13 +17,22 @@ module top(
     output flashMosi,
     output flashCs,
 
+    output buzzer_pin,
+
     input btn1,
-    input btn2
+    input btn2,
+    input btn3
 );
-wire rst = ~btn2;
+debouncer dbc2 (.clk(clk), .btn(~btn2), .out(pause_button));
+debouncer dbc3 (.clk(clk), .btn(~btn3), .out(mute_button));
+reg muted = 0;
+reg paused = 0;
+
+wire rst = ~btn1;
 
 localparam TOTAL_FRAMES = 6955;
 localparam MAX_CMDS = 69;
+localparam MELODY_START_TIMESTAMP = 29*30; // melody starts at 27s, timestamp measured in frames
 
 wire [8:0] init_cmd[MAX_CMDS:0];
 
@@ -166,6 +175,15 @@ decoder dcd (
 .get_data(decoder_get_data),
 .out(decoder_out));
 
+reg buzzer_start = 0;
+buzzer bzz(
+.clk(clk),
+.rst(rst),
+.start(buzzer_start),
+.paused(paused),
+.muted(muted),
+.out(buzzer_pin));
+
 always@(posedge clk or posedge rst) begin
 	if (rst) begin
 		clk_cnt <= 0;
@@ -180,10 +198,10 @@ always@(posedge clk or posedge rst) begin
 
 		pixel_cnt <= 0;
         frame_cnt <=0;
-	end else begin
-
+	end else if (mute_button) muted<=~muted;
+    else if (pause_button) paused<=~paused;
+    else begin
 		case (state)
-
 			INIT_RESET : begin
 				if (clk_cnt == CNT_100MS) begin
 					clk_cnt <= 0;
@@ -258,11 +276,13 @@ always@(posedge clk or posedge rst) begin
 			end
 
 			PLAYBACK : begin
+                buzzer_start <= 0;
                 clk_cnt<=clk_cnt+1;
 				if (pixel_cnt == 135*180) begin
                     frame_cnt<=frame_cnt+1;
                     pixel_cnt<=0;
                     state<=WAITING_FOR_NEXT_FRAME;
+                    if (frame_cnt==MELODY_START_TIMESTAMP) buzzer_start<=1;
 				end else begin
                     decoder_get_data<=0;
 					if (bit_loop == 0) begin
@@ -286,7 +306,7 @@ always@(posedge clk or posedge rst) begin
                     state<=PLAYBACK;
                     clk_cnt<=0;
                 end
-                else clk_cnt<=clk_cnt+1;
+                else if (~paused) clk_cnt<=clk_cnt+1;
             end
 		endcase
 	end

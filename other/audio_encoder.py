@@ -93,10 +93,6 @@ CS8 = 4435
 D8 = 4699
 DS8 = 4978
 
-# Tempo and Whole Note duration setup
-tempo = 138
-wholenote = (60000 * 4) // tempo
-
 main_melody = [
     # beginning melody
     C4, D4, DS4, F4, G4, REST, C5, AS4, G4, C4, G4, F4, DS4, D4, C4, D4, DS4, F4, G4,
@@ -204,6 +200,8 @@ main_notes = [
     8, 8, 8, 8, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, -4, 2
 ]
 
+# Tempo and Whole Note duration setup
+tempo = 138
 wholenote_clock = 27_000_000 * 60 * 4 // tempo
 data = []
 # data format: (clock cycles for note, clock cycles per voltage change) (the second one is zero on silent notes)
@@ -212,7 +210,7 @@ for freq, note_type in zip(main_melody, main_notes):
     if note_type > 0:
         note_clock_duration = wholenote_clock // note_type
     else:
-        note_duration = int((wholenote // abs(note_type)) * 1.5)
+        note_clock_duration = int((wholenote_clock // abs(note_type)) * 1.5)
     if freq > 0:
         data.append((int(note_clock_duration*0.9), int(27_000_000/freq/2)))
         data.append((int(note_clock_duration*0.1), 0))

@@ -3,7 +3,7 @@
 // by fanoble, QQ:87430545
 // 27/6/2022
 
-// gemini used to annotate lcd commands
+// gemini was used to annotate the lcd init commands
 
 module top(
 	input clk, // 27MHz

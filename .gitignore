@@ -3,3 +3,4 @@ reconstructed.mp4
 impl
 src/gowin_prom/gowin_prom.v
 src/gowin_prom/gowin_prom_tmp.v
+*.ipynb

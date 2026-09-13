@@ -3,6 +3,8 @@
 // by fanoble, QQ:87430545
 // 27/6/2022
 
+// gemini used to annotate lcd commands
+
 module top(
 	input clk, // 27MHz
 
@@ -12,23 +14,22 @@ module top(
 	output lcd_rs,
 	output lcd_data,
 
-    output flashClk,
-    input flashMiso, 
-    output flashMosi,
-    output flashCs,
+    output flash_clk,
+    input flash_miso, 
+    output flash_mosi,
+    output flash_cs,
 
     output buzzer_pin,
 
-    input btn1,
-    input btn2,
-    input btn3
+    input btn1, // reset button
+    input btn2,	// pause button
+    input btn3  // mute button
 );
-debouncer dbc2 (.clk(clk), .btn(~btn2), .out(pause_button));
-debouncer dbc3 (.clk(clk), .btn(~btn3), .out(mute_button));
 reg muted = 0;
 reg paused = 0;
-
 wire rst = ~btn1;
+debouncer dbc2 (.clk(clk), .btn(~btn2), .out(pause_button));
+debouncer dbc3 (.clk(clk), .btn(~btn3), .out(mute_button));
 
 localparam TOTAL_FRAMES = 6955;
 localparam MAX_CMDS = 69;
@@ -167,10 +168,10 @@ wire decoder_out;
 
 decoder dcd (
 .clk(clk),
-.flashClk(flashClk),
-.flashMiso(flashMiso),
-.flashMosi(flashMosi),
-.flashCs(flashCs),
+.flash_clk(flash_clk),
+.flash_miso(flash_miso),
+.flash_mosi(flash_mosi),
+.flash_cs(flash_cs),
 .rst(rst),
 .get_data(decoder_get_data),
 .out(decoder_out));

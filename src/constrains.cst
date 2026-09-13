@@ -1,14 +1,14 @@
 IO_LOC "clk" 52;
 IO_PORT "clk" PULL_MODE=UP;
 
-IO_LOC "flashClk" 59;
-IO_PORT "flashClk" IO_TYPE=LVCMOS18;
-IO_LOC "flashMiso" 62;
-IO_PORT "flashMiso" IO_TYPE=LVCMOS18;
-IO_LOC "flashMosi" 61;
-IO_PORT "flashMosi" IO_TYPE=LVCMOS18;
-IO_LOC "flashCs" 60;
-IO_PORT "flashCs" IO_TYPE=LVCMOS18;
+IO_LOC "flash_clk" 59;
+IO_PORT "flash_clk" IO_TYPE=LVCMOS18;
+IO_LOC "flash_miso" 62;
+IO_PORT "flash_miso" IO_TYPE=LVCMOS18;
+IO_LOC "flash_mosi" 61;
+IO_PORT "flash_mosi" IO_TYPE=LVCMOS18;
+IO_LOC "flash_cs" 60;
+IO_PORT "flash_cs" IO_TYPE=LVCMOS18;
 
 IO_LOC "lcd_data" 77;
 IO_PORT "lcd_data" PULL_MODE=UP DRIVE=8;

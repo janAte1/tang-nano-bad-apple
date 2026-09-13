@@ -1,13 +1,14 @@
-module flashReader
+// arena.ai was used to implement proper flash reset logic
+module flash_reader
 #(
   parameter STARTING_ADDRESS = 24'h10_00_00
 )
 (
     input clk,
-    output flashClk,
-    input flashMiso, 
-    output reg flashMosi = 0,
-    output reg flashCs = 1,
+    output flash_clk,
+    input flash_miso, 
+    output reg flash_mosi = 0,
+    output reg flash_cs = 1,
     input next,
     input rst,
     output reg [15:0] out = 0,
@@ -28,7 +29,7 @@ localparam STATE_READ_DATA     = 4'd8;
 localparam STATE_DONE          = 4'd9;
 
 reg enableClock = 0;
-assign flashClk = ~clk & enableClock;
+assign flash_clk = ~clk & enableClock;
 
 reg [31:0] initCommand = 32'h0;
 reg [5:0]  bitCounter = 0;
@@ -39,15 +40,15 @@ reg [3:0]  byteCount = 0;
 
 reg misoSampled = 0;
 always @(negedge clk) begin
-    misoSampled <= flashMiso;
+    misoSampled <= flash_miso;
 end
 
 always @(posedge clk or posedge rst) begin
     if (rst) begin
         state       <= STATE_INIT_POWER;
-        flashCs     <= 1;
+        flash_cs     <= 1;
         enableClock <= 0;
-        flashMosi   <= 0;
+        flash_mosi   <= 0;
         dataReady   <= 0;
         counter     <= 0;
         bitCounter  <= 0;
@@ -57,14 +58,14 @@ always @(posedge clk or posedge rst) begin
 
             // ---- Wait for power stabilization ----
             STATE_INIT_POWER: begin
-                flashCs <= 1;
+                flash_cs <= 1;
                 if (counter == STARTUP_WAIT) begin
                     state      <= STATE_BREAK_DUAL;
                     counter    <= 0;
                     bitCounter <= 0;
                     byteCount  <= 0;
                     shiftOut   <= 8'hFF;
-                    flashCs    <= 0;
+                    flash_cs    <= 0;
                     enableClock <= 1;
                 end else begin
                     counter <= counter + 1'b1;
@@ -81,14 +82,14 @@ always @(posedge clk or posedge rst) begin
             // command sequence. We send 8 bytes (64 clocks) to
             // cover all possible stuck states.
             STATE_BREAK_DUAL: begin
-                flashMosi <= shiftOut[7];
+                flash_mosi <= shiftOut[7];
                 shiftOut  <= {shiftOut[6:0], 1'b1};
                 if (bitCounter == 7) begin
                     bitCounter <= 0;
                     shiftOut   <= 8'hFF;
                     if (byteCount == 7) begin
                         // Done sending 8 bytes of 0xFF
-                        flashCs     <= 1;
+                        flash_cs     <= 1;
                         enableClock <= 0;
                         state       <= STATE_BREAK_GAP;
                         counter     <= 0;
@@ -102,7 +103,7 @@ always @(posedge clk or posedge rst) begin
 
             // ---- CS high gap after break sequence ----
             STATE_BREAK_GAP: begin
-                flashCs <= 1;
+                flash_cs <= 1;
                 if (counter == 50) begin
                     // Now pull CS low again briefly and back high
                     // to ensure a clean CS edge for the flash
@@ -110,7 +111,7 @@ always @(posedge clk or posedge rst) begin
                     counter    <= 0;
                     shiftOut   <= 8'h66;
                     bitCounter <= 0;
-                    flashCs    <= 0;
+                    flash_cs    <= 0;
                     enableClock <= 1;
                 end else begin
                     counter <= counter + 1'b1;
@@ -119,10 +120,10 @@ always @(posedge clk or posedge rst) begin
 
             // ---- Send 0x66 Reset Enable ----
             STATE_RESET_ENABLE: begin
-                flashMosi <= shiftOut[7];
+                flash_mosi <= shiftOut[7];
                 shiftOut  <= {shiftOut[6:0], 1'b0};
                 if (bitCounter == 7) begin
-                    flashCs     <= 1;
+                    flash_cs     <= 1;
                     enableClock <= 0;
                     state       <= STATE_RESET_GAP;
                     counter     <= 0;
@@ -137,7 +138,7 @@ always @(posedge clk or posedge rst) begin
                 if (counter == 50) begin
                     shiftOut    <= 8'h99;
                     bitCounter  <= 0;
-                    flashCs     <= 0;
+                    flash_cs     <= 0;
                     enableClock <= 1;
                     state       <= STATE_RESET_DEVICE;
                 end else begin
@@ -147,10 +148,10 @@ always @(posedge clk or posedge rst) begin
 
             // ---- Send 0x99 Reset Device ----
             STATE_RESET_DEVICE: begin
-                flashMosi <= shiftOut[7];
+                flash_mosi <= shiftOut[7];
                 shiftOut  <= {shiftOut[6:0], 1'b0};
                 if (bitCounter == 7) begin
-                    flashCs     <= 1;
+                    flash_cs     <= 1;
                     enableClock <= 0;
                     state       <= STATE_RESET_WAIT;
                     counter     <= 0;
@@ -162,7 +163,7 @@ always @(posedge clk or posedge rst) begin
 
             // ---- Wait for flash internal reset (~30µs = ~810 cycles @ 27MHz) ----
             STATE_RESET_WAIT: begin
-                flashCs <= 1;
+                flash_cs <= 1;
                 if (counter == 2000) begin
                     state       <= STATE_SEND;
                     counter     <= 0;
@@ -175,9 +176,9 @@ always @(posedge clk or posedge rst) begin
 
             // ---- Send 0x03 + 24-bit address ----
             STATE_SEND: begin
-                flashCs     <= 0;
+                flash_cs     <= 0;
                 enableClock <= 1;
-                flashMosi   <= initCommand[31];
+                flash_mosi   <= initCommand[31];
                 initCommand <= {initCommand[30:0], 1'b0};
                 if (bitCounter == 32) begin
                     state      <= STATE_READ_DATA;

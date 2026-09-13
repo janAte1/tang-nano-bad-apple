@@ -1,8 +1,5 @@
-import time
-from machine import Pin, PWM
-
-# Setup Buzzer Pin on GPIO 15
-buzzer = PWM(Pin(15))
+# Melody from https://github.com/lenpai0/BadAppleSEKAIver_Buzzer_Cover_Code
+# It doesn't align perfectly with the video but whatever
 
 # Note Frequencies (Hz)
 REST = 0
@@ -207,31 +204,23 @@ main_notes = [
     8, 8, 8, 8, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, -4, 2
 ]
 
-# Play function
-def play_melody():
-    for freq, note_type in zip(main_melody, main_notes):
-        # Calculate note duration
-        if note_type > 0:
-            note_duration = wholenote // note_type
+wholenote_clock = 27_000_000 * 60 * 4 // tempo
+data = []
+# data format: (clock cycles for note, clock cycles per voltage change) (the second one is zero on silent notes)
+for freq, note_type in zip(main_melody, main_notes):
+    # Calculate note duration
+    if note_type > 0:
+        note_clock_duration = wholenote_clock // note_type
+    else:
+        note_duration = int((wholenote // abs(note_type)) * 1.5)
+    if freq > 0:
+        data.append((int(note_clock_duration*0.9), int(27_000_000/freq/2)))
+        data.append((int(note_clock_duration*0.1), 0))
+    else:
+        if data[-1][1]==0:
+            data[-1]=(data[-1][0]+note_clock_duration, data[-1][1])
         else:
-            note_duration = int((wholenote // abs(note_type)) * 1.5)
-
-        # Play tone if freq is not REST
-        if freq > 0:
-            buzzer.freq(freq)
-            buzzer.duty_u16(32768)  # 50% duty cycle
-            time.sleep_ms(int(note_duration * 0.9))
-            
-            # Silence briefly between notes
-            buzzer.duty_u16(0)
-            time.sleep_ms(int(note_duration * 0.1))
-        else:
-            # REST note
-            buzzer.duty_u16(0)
-            time.sleep_ms(note_duration)
-
-    # Ensure buzzer is off at the end
-    buzzer.duty_u16(0)
-
-# Run the melody
-play_melody()
+            data.append((note_clock_duration, 0))
+with open("melody.hex", "w") as f:
+    for duration, period in data:
+        f.write(f'{duration:08x}{period:04x}\n')

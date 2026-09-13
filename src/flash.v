@@ -67,7 +67,7 @@ always @(posedge clk or posedge rst) begin
                     flashCs    <= 0;
                     enableClock <= 1;
                 end else begin
-                    counter <= counter + 1;
+                    counter <= counter + 1'b1;
                 end
             end
 
@@ -93,10 +93,10 @@ always @(posedge clk or posedge rst) begin
                         state       <= STATE_BREAK_GAP;
                         counter     <= 0;
                     end else begin
-                        byteCount <= byteCount + 1;
+                        byteCount <= byteCount + 1'b1;
                     end
                 end else begin
-                    bitCounter <= bitCounter + 1;
+                    bitCounter <= bitCounter + 1'b1;
                 end
             end
 
@@ -113,7 +113,7 @@ always @(posedge clk or posedge rst) begin
                     flashCs    <= 0;
                     enableClock <= 1;
                 end else begin
-                    counter <= counter + 1;
+                    counter <= counter + 1'b1;
                 end
             end
 
@@ -128,7 +128,7 @@ always @(posedge clk or posedge rst) begin
                     counter     <= 0;
                     bitCounter  <= 0;
                 end else begin
-                    bitCounter <= bitCounter + 1;
+                    bitCounter <= bitCounter + 6'b1;
                 end
             end
 
@@ -141,7 +141,7 @@ always @(posedge clk or posedge rst) begin
                     enableClock <= 1;
                     state       <= STATE_RESET_DEVICE;
                 end else begin
-                    counter <= counter + 1;
+                    counter <= counter + 1'b1;
                 end
             end
 
@@ -156,7 +156,7 @@ always @(posedge clk or posedge rst) begin
                     counter     <= 0;
                     bitCounter  <= 0;
                 end else begin
-                    bitCounter <= bitCounter + 1;
+                    bitCounter <= bitCounter + 1'b1;
                 end
             end
 
@@ -169,7 +169,7 @@ always @(posedge clk or posedge rst) begin
                     initCommand <= INIT_COMMAND;
                     bitCounter  <= 0;
                 end else begin
-                    counter <= counter + 1;
+                    counter <= counter + 1'b1;
                 end
             end
 
@@ -183,7 +183,7 @@ always @(posedge clk or posedge rst) begin
                     state      <= STATE_READ_DATA;
                     bitCounter <= 0;
                 end else begin
-                    bitCounter <= bitCounter + 1;
+                    bitCounter <= bitCounter + 1'b1;
                 end
             end
 
@@ -196,7 +196,7 @@ always @(posedge clk or posedge rst) begin
                     enableClock <= 0;
                     state       <= STATE_DONE;
                 end else begin
-                    bitCounter <= bitCounter + 1;
+                    bitCounter <= bitCounter + 1'b1;
                 end
             end
 

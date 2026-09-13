@@ -237,7 +237,7 @@ always@(posedge clk or posedge rst) begin
 				end else begin
 					// loop
 					spi_data <= { spi_data[6:0], 1'b1 };
-					bit_loop <= bit_loop + 1;
+					bit_loop <= bit_loop + 1'b1;
 				end
 			end
 
@@ -266,20 +266,20 @@ always@(posedge clk or posedge rst) begin
 						lcd_cs_r <= 1;
 						lcd_rs_r <= 1;
 						bit_loop <= 0;
-						cmd_index <= cmd_index + 1; // next command
+						cmd_index <= cmd_index + 1'b1; // next command
 					end else begin
 						// loop
 						spi_data <= { spi_data[6:0], 1'b1 };
-						bit_loop <= bit_loop + 1;
+						bit_loop <= bit_loop + 1'b1;
 					end
 				end
 			end
 
 			PLAYBACK : begin
                 buzzer_start <= 0;
-                clk_cnt<=clk_cnt+1;
+                clk_cnt<=clk_cnt+1'b1;
 				if (pixel_cnt == 135*180) begin
-                    frame_cnt<=frame_cnt+1;
+                    frame_cnt<=frame_cnt+1'b1;
                     pixel_cnt<=0;
                     state<=WAITING_FOR_NEXT_FRAME;
                     if (frame_cnt==MELODY_START_TIMESTAMP) buzzer_start<=1;
@@ -290,14 +290,14 @@ always@(posedge clk or posedge rst) begin
 						lcd_cs_r <= 0;
 						lcd_rs_r <= 1;
 						spi_data[7] <= decoder_out;
-						bit_loop <= bit_loop + 1;
+						bit_loop <= bit_loop + 1'b1;
 					end else if (bit_loop == 16) begin
 						lcd_cs_r <= 1;
 						lcd_rs_r <= 1;
 						bit_loop <= 0;
-						pixel_cnt <= pixel_cnt + 1;
+						pixel_cnt <= pixel_cnt + 1'b1;
 					end else begin
-						bit_loop <= bit_loop + 1;
+						bit_loop <= bit_loop + 1'b1;
 					end
 				end
 			end
@@ -306,7 +306,7 @@ always@(posedge clk or posedge rst) begin
                     state<=PLAYBACK;
                     clk_cnt<=0;
                 end
-                else if (~paused) clk_cnt<=clk_cnt+1;
+                else if (~paused) clk_cnt<=clk_cnt+1'b1;
             end
 		endcase
 	end

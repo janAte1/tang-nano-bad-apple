@@ -59,7 +59,7 @@ end else begin
                 load_next_word<=1;
             end
             else if (get_data) begin
-                count<=count-1;
+                count<=count-1'd1;
             end
         end
 

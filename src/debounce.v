@@ -16,7 +16,7 @@ always @(posedge clk) begin
     ff1<=btn;
     ff2<=ff1;
     if (btn_change) ctr<=0;
-    else if (ctr<TRESHOLD) ctr<=ctr+1;
+    else if (ctr<TRESHOLD) ctr<=ctr+1'b1;
     else begin
         debounced_button<=ff2;
         // on rising edge give out a pulse
